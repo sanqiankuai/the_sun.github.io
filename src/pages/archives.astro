@@ -41,7 +41,7 @@ const years = Object.keys(postsByYear).map(Number).sort((a, b) => b - a);
 									<span class="post-date">
 										<FormattedDate date={post.data.pubDate} />
 									</span>
-									<a href={`/blog/${post.slug}/`} class="post-title">
+									<a href={`/blog/${post.id}/`} class="post-title">
 										{post.data.title}
 									</a>
 								</li>
