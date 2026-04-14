@@ -1,0 +1,174 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+
+const galleryDir = '/images/gallery/';
+
+const allFiles = import.meta.glob<{ default: ImageMetadata }>('/public/images/gallery/*.jpg', { eager: true });
+
+const parsedImages = Object.entries(allFiles).map(([path, img]) => {
+	const filename = path.split('/').pop() || '';
+	const dateMatch = filename.match(/^(\d{8})_/);
+	let date = '';
+	if (dateMatch) {
+		const d = dateMatch[1];
+		date = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
+	}
+	return {
+		src: `${galleryDir}${filename}`,
+		filename,
+		date,
+	};
+}).sort((a, b) => b.filename.localeCompare(a.filename));
+
+const imagesByYear = parsedImages.reduce((acc, img) => {
+	const year = img.date ? img.date.slice(0, 4) : '未知';
+	if (!acc[year]) acc[year] = [];
+	acc[year].push(img);
+	return acc;
+}, {} as Record<string, typeof parsedImages>);
+
+const years = Object.keys(imagesByYear).sort((a, b) => b.localeCompare(a));
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`图库 | ${SITE_TITLE}`} description="我的图库" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>图库</h1>
+			<p class="gallery-count">共 {parsedImages.length} 张图片</p>
+			
+			{years.map((year) => (
+				<section class="year-section">
+					<h2 class="year-title">{year} ({imagesByYear[year].length})</h2>
+					<div class="gallery-grid">
+						{imagesByYear[year].map((img) => (
+							<div class="gallery-item" data-src={img.src}>
+								<img src={img.src} alt={img.filename} loading="lazy" />
+								{img.date && <span class="image-date">{img.date}</span>}
+							</div>
+						))}
+					</div>
+				</section>
+			))}
+		</main>
+		
+		<div id="lightbox" class="lightbox hidden">
+			<button class="lightbox-close" aria-label="关闭">×</button>
+			<img id="lightbox-img" src="" alt="" />
+		</div>
+		
+		<Footer />
+	</body>
+</html>
+
+<script define:vars={{ parsedImages }}>
+	const lightbox = document.getElementById('lightbox');
+	const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+	const closeBtn = document.querySelector('.lightbox-close');
+	
+	document.querySelectorAll('.gallery-item').forEach((item) => {
+		item.addEventListener('click', () => {
+			const src = item.getAttribute('data-src');
+			if (src && lightboxImg) {
+				lightboxImg.src = src;
+				lightbox?.classList.remove('hidden');
+			}
+		});
+	});
+	
+	closeBtn?.addEventListener('click', () => {
+		lightbox?.classList.add('hidden');
+	});
+	
+	lightbox?.addEventListener('click', (e) => {
+		if (e.target === lightbox) {
+			lightbox.classList.add('hidden');
+		}
+	});
+</script>
+
+<style>
+	.gallery-count {
+		color: rgb(var(--gray));
+		margin-bottom: 2rem;
+	}
+	.year-section {
+		margin-bottom: 2rem;
+	}
+	.year-title {
+		font-size: 1.3rem;
+		color: var(--accent);
+		margin-bottom: 1rem;
+	}
+	.gallery-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+		gap: 1rem;
+	}
+	.gallery-item {
+		position: relative;
+		overflow: hidden;
+		border-radius: 8px;
+		cursor: pointer;
+		aspect-ratio: 1;
+	}
+	.gallery-item img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.3s;
+	}
+	.gallery-item:hover img {
+		transform: scale(1.1);
+	}
+	.image-date {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: rgba(0, 0, 0, 0.6);
+		color: white;
+		font-size: 0.75rem;
+		padding: 0.25rem;
+		text-align: center;
+	}
+	
+	.lightbox {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.9);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+	.lightbox.hidden {
+		display: none;
+	}
+	.lightbox-close {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		background: none;
+		border: none;
+		color: white;
+		font-size: 2rem;
+		cursor: pointer;
+		padding: 0.5rem;
+	}
+	#lightbox-img {
+		max-width: 90%;
+		max-height: 90%;
+		object-fit: contain;
+	}
+</style>

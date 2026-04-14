@@ -1,0 +1,138 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import { SITE_TITLE } from '../../consts';
+import { getCollection } from 'astro:content';
+
+const moments = (await getCollection('moments')).sort(
+	(a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const allTags = moments
+	.flatMap((m) => m.data.tags || [])
+	.reduce((acc, tag) => {
+		acc[tag] = (acc[tag] || 0) + 1;
+		return acc;
+	}, {} as Record<string, number>);
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`瞬间 | ${SITE_TITLE}`} description="我的瞬间" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>瞬间</h1>
+			<a href="/rss.xml" class="rss-link">RSS 订阅</a>
+			
+			<div class="tags-filter">
+				{Object.entries(allTags).map(([tag, count]) => (
+					<span class="tag">{tag} ({count})</span>
+				))}
+			</div>
+
+			<div class="moments-list">
+				{moments.map((moment) => (
+					<article class="moment-card">
+						<div class="moment-header">
+							<img src="/images/avatar.jpg" alt="Avatar" class="moment-avatar" />
+							<span class="moment-author">{SITE_TITLE}</span>
+							<span class="moment-date">
+								<FormattedDate date={moment.data.date} />
+							</span>
+						</div>
+						<div class="moment-content">
+							<p>{moment.body}</p>
+							{moment.data.image && (
+								<img src={moment.data.image} alt="Moment image" class="moment-image" />
+							)}
+						</div>
+						<div class="moment-tags">
+							{moment.data.tags?.map((tag) => (
+								<span class="tag">{tag}</span>
+							))}
+						</div>
+					</article>
+				))}
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.rss-link {
+		display: inline-block;
+		margin-bottom: 1rem;
+		color: var(--accent);
+	}
+	.tags-filter {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		margin-bottom: 2rem;
+	}
+	.tag {
+		background: rgb(var(--gray-light));
+		padding: 0.25rem 0.75rem;
+		border-radius: 4px;
+		font-size: 0.85rem;
+		color: rgb(var(--gray-dark));
+	}
+	.moments-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	.moment-card {
+		background: white;
+		border-radius: 12px;
+		padding: 1.5rem;
+		box-shadow: 0 2px 8px rgba(var(--black), 5%);
+	}
+	.moment-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+	.moment-avatar {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+	.moment-author {
+		font-weight: 600;
+		color: rgb(var(--black));
+	}
+	.moment-date {
+		color: rgb(var(--gray));
+		font-size: 0.85rem;
+		margin-left: auto;
+	}
+	.moment-content p {
+		margin: 0;
+		line-height: 1.6;
+		color: rgb(var(--gray-dark));
+	}
+	.moment-image {
+		width: 100%;
+		max-width: 400px;
+		border-radius: 8px;
+		margin-top: 1rem;
+	}
+	.moment-tags {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+	.moment-tags .tag {
+		background: var(--accent);
+		color: white;
+	}
+</style>

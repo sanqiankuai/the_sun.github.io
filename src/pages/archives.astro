@@ -1,0 +1,100 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import { SITE_TITLE } from '../consts';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+const postsByYear = posts.reduce((acc, post) => {
+	const year = post.data.pubDate.getFullYear();
+	if (!acc[year]) acc[year] = [];
+	acc[year].push(post);
+	return acc;
+}, {} as Record<number, typeof posts>);
+
+const years = Object.keys(postsByYear).map(Number).sort((a, b) => b - a);
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`归档 | ${SITE_TITLE}`} description="文章归档" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>文章归档</h1>
+			<p class="archive-count">共 {posts.length} 篇文章</p>
+			
+			<div class="archive-list">
+				{years.map((year) => (
+					<section class="year-section">
+						<h2 class="year-title">{year}</h2>
+						<ul class="post-list">
+							{postsByYear[year].map((post) => (
+								<li class="post-item">
+									<span class="post-date">
+										<FormattedDate date={post.data.pubDate} />
+									</span>
+									<a href={`/blog/${post.slug}/`} class="post-title">
+										{post.data.title}
+									</a>
+								</li>
+							))}
+						</ul>
+					</section>
+				))}
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.archive-count {
+		color: rgb(var(--gray));
+		margin-bottom: 2rem;
+	}
+	.archive-list {
+		margin-top: 2rem;
+	}
+	.year-section {
+		margin-bottom: 2rem;
+	}
+	.year-title {
+		font-size: 1.5rem;
+		color: var(--accent);
+		border-bottom: 2px solid var(--accent);
+		padding-bottom: 0.5rem;
+		margin-bottom: 1rem;
+	}
+	.post-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.post-item {
+		display: flex;
+		align-items: center;
+		padding: 0.75rem 0;
+		border-bottom: 1px solid rgb(var(--gray-light));
+	}
+	.post-date {
+		color: rgb(var(--gray));
+		font-size: 0.9rem;
+		min-width: 120px;
+	}
+	.post-title {
+		color: rgb(var(--black));
+		text-decoration: none;
+		transition: color 0.2s;
+	}
+	.post-title:hover {
+		color: var(--accent);
+	}
+</style>
