@@ -13,9 +13,24 @@ import HeaderLink from './HeaderLink.astro';
 			<HeaderLink href="/gallery">图库</HeaderLink>
 		</div>
 		<div class="social-links">
+			<button class="search-btn" id="search-btn" title="搜索">
+				<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="11" cy="11" r="8"></circle>
+					<path d="M21 21l-4.35-4.35"></path>
+				</svg>
+			</button>
+			<button class="theme-toggle" id="theme-toggle" title="切换主题">
+				<svg class="sun-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="5"></circle>
+					<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+				</svg>
+				<svg class="moon-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+				</svg>
+			</button>
 			<a href="/rss.xml" target="_blank" title="RSS">
 				<span class="sr-only">RSS 订阅</span>
-				<svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+				<svg viewBox="0 0 16 16" aria-hidden="true" width="22" height="22">
 					<path fill="currentColor" d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm1.5 2.5a1 1 0 0 1 1 1 1 1 0 1 1-1-1zm3.5 0a6.5 6.5 0 0 1 6.5 6.5.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5 4.5 4.5 0 0 0-4.5-4.5.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm0 3a3.5 3.5 0 0 1 3.5 3.5.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5 1.5 1.5 0 0 0-1.5-1.5.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
 				</svg>
 			</a>
@@ -23,12 +38,129 @@ import HeaderLink from './HeaderLink.astro';
 	</nav>
 </header>
 
+<div class="search-modal" id="search-modal">
+	<button class="search-close" id="search-close">×</button>
+	<div class="search-container">
+		<input type="text" class="search-input" id="search-input" placeholder="搜索文章、瞬间..." autocomplete="off" />
+		<div class="search-results" id="search-results"></div>
+	</div>
+</div>
+
+<script>
+	const themeToggle = document.getElementById('theme-toggle');
+	const sunIcon = themeToggle?.querySelector('.sun-icon');
+	const moonIcon = themeToggle?.querySelector('.moon-icon');
+	
+	const savedTheme = localStorage.getItem('theme');
+	if (savedTheme === 'light') {
+		document.documentElement.setAttribute('data-theme', 'light');
+		if (sunIcon) sunIcon.style.display = 'none';
+		if (moonIcon) moonIcon.style.display = 'block';
+	}
+	
+	themeToggle?.addEventListener('click', () => {
+		const currentTheme = document.documentElement.getAttribute('data-theme');
+		if (currentTheme === 'light') {
+			document.documentElement.removeAttribute('data-theme');
+			localStorage.setItem('theme', 'dark');
+			if (sunIcon) sunIcon.style.display = 'block';
+			if (moonIcon) moonIcon.style.display = 'none';
+		} else {
+			document.documentElement.setAttribute('data-theme', 'light');
+			localStorage.setItem('theme', 'light');
+			if (sunIcon) sunIcon.style.display = 'none';
+			if (moonIcon) moonIcon.style.display = 'block';
+		}
+	});
+	
+	const searchBtn = document.getElementById('search-btn');
+	const searchModal = document.getElementById('search-modal');
+	const searchClose = document.getElementById('search-close');
+	const searchInput = document.getElementById('search-input') as HTMLInputElement;
+	const searchResults = document.getElementById('search-results');
+	
+	let searchData: any[] = [];
+	
+	const fetchSearchData = async () => {
+		if (searchData.length === 0) {
+			try {
+				const res = await fetch('/search.json');
+				searchData = await res.json();
+			} catch (e) {
+				console.error('Failed to load search data');
+			}
+		}
+	};
+	
+	const performSearch = (query: string) => {
+		if (!query || !searchResults) {
+			searchResults.innerHTML = '';
+			return;
+		}
+		
+		const q = query.toLowerCase();
+		const results = searchData.filter(item => {
+			return item.title.toLowerCase().includes(q) ||
+				item.description.toLowerCase().includes(q) ||
+				item.content.toLowerCase().includes(q) ||
+				(item.tags && item.tags.some(tag => tag.toLowerCase().includes(q)));
+		}).slice(0, 10);
+		
+		if (results.length === 0) {
+			searchResults.innerHTML = '<div class="search-result"><p>未找到相关内容</p></div>';
+			return;
+		}
+		
+		searchResults.innerHTML = results.map(item => `
+			<a href="${item.url}" class="search-result">
+				<h4>${item.title}</h4>
+				<p>${item.type === 'blog' ? '文章' : '瞬间'} · ${item.date}</p>
+			</a>
+		`).join('');
+	};
+	
+	searchBtn?.addEventListener('click', () => {
+		searchModal?.classList.add('active');
+		searchInput?.focus();
+		fetchSearchData();
+	});
+	
+	searchClose?.addEventListener('click', () => {
+		searchModal?.classList.remove('active');
+	});
+	
+	searchModal?.addEventListener('click', (e) => {
+		if (e.target === searchModal) {
+			searchModal.classList.remove('active');
+		}
+	});
+	
+	searchInput?.addEventListener('input', (e) => {
+		performSearch(e.target.value);
+	});
+	
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && searchModal?.classList.contains('active')) {
+			searchModal.classList.remove('active');
+		}
+		if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+			e.preventDefault();
+			searchModal?.classList.add('active');
+			searchInput?.focus();
+			fetchSearchData();
+		}
+	});
+</script>
+
 <style>
 	header {
 		margin: 0;
 		padding: 0 1em;
-		background: white;
-		box-shadow: 0 2px 8px rgba(var(--black), 5%);
+		background: var(--header-bg);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+		position: sticky;
+		top: 0;
+		z-index: 100;
 	}
 	h2 {
 		margin: 0;
@@ -37,6 +169,7 @@ import HeaderLink from './HeaderLink.astro';
 	h2 a,
 	h2 a.active {
 		text-decoration: none;
+		color: var(--text-primary);
 	}
 	nav {
 		display: flex;
@@ -45,7 +178,7 @@ import HeaderLink from './HeaderLink.astro';
 	}
 	nav a {
 		padding: 1em 0.5em;
-		color: var(--black);
+		color: var(--text-primary);
 		border-bottom: 4px solid transparent;
 		text-decoration: none;
 	}
@@ -53,16 +186,34 @@ import HeaderLink from './HeaderLink.astro';
 		text-decoration: none;
 		border-bottom-color: var(--accent);
 	}
-	.social-links,
-	.social-links a {
+	.social-links {
 		display: flex;
+		gap: 0.5rem;
+	}
+	.social-links a,
+	.social-links button {
+		padding: 0.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 8px;
+		background: var(--bg-tertiary);
+		color: var(--text-primary);
+		transition: all 0.2s;
+		border: none;
+		cursor: pointer;
+	}
+	.social-links a:hover,
+	.social-links button:hover {
+		background: var(--accent);
+		color: white;
 	}
 	@media (max-width: 720px) {
-		.social-links {
-			display: none;
-		}
 		.internal-links {
-			font-size: 0.9rem;
+			font-size: 0.85rem;
+		}
+		.social-links {
+			gap: 0.25rem;
 		}
 	}
 </style>
