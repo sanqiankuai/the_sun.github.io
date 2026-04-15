@@ -38,6 +38,13 @@ const years = Object.keys(imagesByYear).sort((a, b) => b.localeCompare(a));
 	<head>
 		<BaseHead title={`图库 | ${SITE_TITLE}`} description="我的图库" />
 		<style is:inline>
+			/* 全局 box-sizing 修复 */
+			.password-overlay *,
+			.password-overlay *::before,
+			.password-overlay *::after {
+				box-sizing: border-box;
+			}
+			
 			.password-overlay {
 				position: fixed;
 				top: 0;
@@ -55,12 +62,13 @@ const years = Object.keys(imagesByYear).sort((a, b) => b.localeCompare(a));
 			}
 			.password-box {
 				background: #1f2937;
-				padding: 2rem;
+				padding: 1.5rem;
 				border-radius: 16px;
 				box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 				text-align: center;
 				max-width: 400px;
-				width: 90%;
+				width: calc(100% - 2rem);
+				margin: 1rem;
 			}
 			.password-box h2 {
 				margin-bottom: 1rem;
@@ -80,6 +88,7 @@ const years = Object.keys(imagesByYear).sort((a, b) => b.localeCompare(a));
 				font-size: 1rem;
 				outline: none;
 				margin-bottom: 1rem;
+				box-sizing: border-box;
 			}
 			.password-input:focus {
 				border-color: #2563eb;

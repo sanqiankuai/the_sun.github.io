@@ -18,6 +18,11 @@
 	--header-bg: #0f1219;
 }
 
+/* 全局 box-sizing 修复 */
+*, *::before, *::after {
+	box-sizing: border-box;
+}
+
 [data-theme="light"] {
 	--bg-primary: #ffffff;
 	--bg-secondary: #f9fafb;
@@ -229,11 +234,12 @@ th, td {
 
 .search-container {
 	width: 600px;
-	max-width: 90%;
+	max-width: calc(90% - 3rem);
 	background: var(--bg-secondary);
 	border-radius: 12px;
 	padding: 1.5rem;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	box-sizing: border-box;
 }
 
 .search-input {
@@ -246,6 +252,7 @@ th, td {
 	font-size: 1.1rem;
 	outline: none;
 	transition: border-color 0.2s;
+	box-sizing: border-box;
 }
 
 .search-input:focus {
