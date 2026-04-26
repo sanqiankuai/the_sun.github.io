@@ -36,8 +36,8 @@ const posts = (await getCollection('blog')).sort(
 				<div class="posts-grid">
 					{posts.slice(0, 6).map((post) => (
 						<a href={`/blog/${post.id}/`} class="post-card">
-							{post.data.heroImage && (
-								<img src={post.data.heroImage} alt={post.data.title} class="post-image" />
+							{(post.data.cardImage || post.data.heroImage) && (
+								<img src={post.data.cardImage || post.data.heroImage} alt={post.data.title} class="post-image" />
 							)}
 							<div class="post-content">
 								<h3>{post.data.title}</h3>
