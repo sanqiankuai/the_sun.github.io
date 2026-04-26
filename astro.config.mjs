@@ -6,7 +6,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://taupe-bubblegum-124798.netlify.app',
+	site: 'https://liuqi.vip',
 	integrations: [mdx(), sitemap()],
 	fonts: [
 		{
