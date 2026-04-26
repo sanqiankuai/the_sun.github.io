@@ -7,6 +7,7 @@ REPO_DIR="${REPO_DIR:-$SITE_ROOT/repo}"
 RELEASES_DIR="${RELEASES_DIR:-$SITE_ROOT/releases}"
 CURRENT_LINK="${CURRENT_LINK:-$SITE_ROOT/current}"
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
+DEPLOY_STRATEGY="${DEPLOY_STRATEGY:-inplace}"
 
 if [[ ! -d "$REPO_DIR" ]]; then
 	echo "Repository directory not found: $REPO_DIR" >&2
@@ -15,8 +16,6 @@ fi
 
 timestamp="$(date +%Y%m%d%H%M%S)"
 release_dir="$RELEASES_DIR/$timestamp"
-
-mkdir -p "$RELEASES_DIR"
 
 cd "$REPO_DIR"
 
@@ -28,16 +27,21 @@ fi
 
 npm run build
 
-mkdir -p "$release_dir"
-rsync -a --delete dist/ "$release_dir/"
-ln -sfn "$release_dir" "$CURRENT_LINK"
+if [[ "$DEPLOY_STRATEGY" == "release-copy" ]]; then
+	mkdir -p "$RELEASES_DIR"
+	mkdir -p "$release_dir"
+	rsync -a --delete dist/ "$release_dir/"
+	ln -sfn "$release_dir" "$CURRENT_LINK"
+
+	if [[ "$KEEP_RELEASES" =~ ^[0-9]+$ ]] && (( KEEP_RELEASES > 0 )); then
+		find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d | sort | head -n -"$KEEP_RELEASES" | xargs -r rm -rf
+	fi
+else
+	ln -sfn "$REPO_DIR/dist" "$CURRENT_LINK"
+fi
 
 if [[ -n "${POST_DEPLOY_CMD:-}" ]]; then
 	bash -lc "$POST_DEPLOY_CMD"
 fi
 
-if [[ "$KEEP_RELEASES" =~ ^[0-9]+$ ]] && (( KEEP_RELEASES > 0 )); then
-	find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d | sort | head -n -"$KEEP_RELEASES" | xargs -r rm -rf
-fi
-
-echo "Deployment completed: $release_dir"
+echo "Deployment completed with strategy: $DEPLOY_STRATEGY"

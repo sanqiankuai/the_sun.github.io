@@ -5,8 +5,9 @@ This site can be deployed as a static Astro build on a Linux VPS.
 ## Layout
 
 - Repo checkout: `/srv/www/liuqi-site/repo`
-- Static releases: `/srv/www/liuqi-site/releases/<timestamp>`
 - Active site symlink: `/srv/www/liuqi-site/current`
+- Default low-disk mode: `current -> repo/dist`
+- Optional release-copy mode: `/srv/www/liuqi-site/releases/<timestamp>`
 
 ## Build and deploy on the server
 
@@ -14,6 +15,8 @@ This site can be deployed as a static Astro build on a Linux VPS.
 cd /srv/www/liuqi-site/repo
 bash scripts/deploy-static.sh
 ```
+
+The default `inplace` strategy is intended for small VPS disks. To keep timestamped releases instead, run with `DEPLOY_STRATEGY=release-copy`.
 
 ## GitHub Actions secrets
 
